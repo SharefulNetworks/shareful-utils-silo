@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"syscall"
 
 	"github.com/SharefulNetworks/shareful-utils-emptyshell/internal/session"
@@ -40,7 +41,20 @@ func EnterMountNamespace(s *session.Session) error {
 
 // RunShell starts an interactive Bash shell with the overlay as its root.
 func RunShell(s *session.Session) error {
-	cmd := exec.Command("/bin/bash", "--noprofile", "--norc")
+	promptName := s.Name
+	if s.Transient {
+		if promptName == "" {
+			promptName = filepath.Base(s.Root)
+		}
+	} else if promptName == "" {
+		promptName = "unnamed"
+	}
+
+	bootstrap := fmt.Sprintf(
+		"export PS1=%s; mount -t proc proc /proc && exec /bin/bash --noprofile --norc -i",
+		shellQuote("\\[\\e[92m\\]silo#"+promptName+"> \\[\\e[0m\\] "),
+	)
+	cmd := exec.Command("/bin/bash", "-c", bootstrap)
 
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
@@ -48,25 +62,24 @@ func RunShell(s *session.Session) error {
 
 	// Chroot the child into the overlay so it sees the mounted filesystem as
 	// its root rather than as a subdirectory of the host system.
+	// Addionally, we also enter a new PID namespace so that the child process sees itself as PID 1
+	// and can manage its own processes independently of the host system. (i.e. process isolation)
 	cmd.Dir = "/"
 	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Chroot: s.Merged,
+		Chroot:     s.Merged,
+		Cloneflags: syscall.CLONE_NEWPID,
 	}
 
-	promptName := s.Name
-	if s.Transient {
-		if promptName == "" {
-			promptName = filepath.Base(s.Root)
-		} else {
-			promptName = promptName
+	env := make([]string, 0, len(os.Environ())+3)
+	for _, entry := range os.Environ() {
+		if strings.HasPrefix(entry, "PROMPT_COMMAND=") {
+			continue
 		}
-	} else if promptName == "" {
-		promptName = "unnamed"
+		env = append(env, entry)
 	}
-	cmd.Env = append(os.Environ(),
+	cmd.Env = append(env,
 		"EMPTY_SHELL=1",
 		"EMPTY_SHELL_ROOT=/",
-		"PS1=silo#"+promptName+"> ",
 	)
 
 	if err := cmd.Run(); err != nil {
@@ -74,4 +87,8 @@ func RunShell(s *session.Session) error {
 	}
 
 	return nil
+}
+
+func shellQuote(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", "'\\''") + "'"
 }

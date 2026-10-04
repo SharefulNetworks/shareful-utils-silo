@@ -41,6 +41,13 @@ func NewDefaultMountHandler() *MountHandler {
 // Apply mounts all default runtime filesystems into the chroot root.
 func (m *MountHandler) Apply(root string) error {
 	for _, spec := range m.mounts {
+
+		//NB: we now skip mounting /proc here because in order for process isolation to work correctly, 
+		//    /proc must be mounted inside the chroot after entering the new PID namespace. This is done in the RunShell function in namespace_linux.go.
+		if spec.Target == "/proc" {
+			continue
+		}
+
 		target := filepath.Join(root, spec.Target)
 		if err := os.MkdirAll(target, 0755); err != nil {
 			return fmt.Errorf("create mount target %s: %w", target, err)
