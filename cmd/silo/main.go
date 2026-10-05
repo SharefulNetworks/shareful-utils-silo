@@ -8,15 +8,15 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/SharefulNetworks/shareful-utils-emptyshell/internal/filesystem"
-	"github.com/SharefulNetworks/shareful-utils-emptyshell/internal/namespace"
-	"github.com/SharefulNetworks/shareful-utils-emptyshell/internal/session"
+	"github.com/SharefulNetworks/shareful-utils-silo/internal/filesystem"
+	"github.com/SharefulNetworks/shareful-utils-silo/internal/namespace"
+	"github.com/SharefulNetworks/shareful-utils-silo/internal/session"
 )
 
 func main() {
 	if os.Geteuid() != 0 {
-		fmt.Fprintln(os.Stderr, "emptyshell: The applmust be run as root")
-		fmt.Fprintln(os.Stderr, "usage: sudo ./emptyshell")
+		fmt.Fprintln(os.Stderr, "silo: the application must be run as root")
+		fmt.Fprintln(os.Stderr, "usage: sudo ./silo")
 		os.Exit(1)
 	}
 
@@ -40,7 +40,7 @@ func main() {
 			fatal(err)
 		}
 
-		fmt.Printf("Created EmptyShell environment %q\n", s.Name)
+		fmt.Printf("Created Silo environment %q\n", s.Name)
 	case "enter":
 		if len(args) != 2 {
 			usageAndExit()
@@ -64,7 +64,7 @@ func main() {
 			fatal(err)
 		}
 
-		fmt.Printf("Destroyed EmptyShell environment %q\n", args[1])
+		fmt.Printf("Destroyed Silo environment %q\n", args[1])
 	default:
 		usageAndExit()
 	}
@@ -102,7 +102,7 @@ func runShell(s *session.Session) error {
 	}
 	defer filesystem.TeardownOverlay(s)
 
-	fmt.Println("Entering EmptyShell...")
+	fmt.Println("Entering Silo...")
 	fmt.Println("Changes made inside this shell are isolated in the overlay.")
 	fmt.Println("Type 'exit' to leave.")
 
@@ -121,14 +121,14 @@ func runShell(s *session.Session) error {
 
 func usageAndExit() {
 	fmt.Fprintln(os.Stderr, "usage:")
-	fmt.Fprintln(os.Stderr, "  emptyshell - creates and runs an ephemeral, isolated environment, the environment (and all changes made within it) are automatically discarded on exit")
-	fmt.Fprintln(os.Stderr, "  emptyshell create NAME - create a new named, isolated environment. The environment persists until explicitly destroyed.")
-	fmt.Fprintln(os.Stderr, "  emptyshell enter NAME - enter an existing named, isolated environment")
-	fmt.Fprintln(os.Stderr, "  emptyshell destroy NAME - destroy an existing named, isolated environment")
+	fmt.Fprintln(os.Stderr, "  silo - creates and runs an ephemeral, isolated environment, the environment (and all changes made within it) are automatically discarded on exit")
+	fmt.Fprintln(os.Stderr, "  silo create NAME - create a new named, isolated environment. The environment persists until explicitly destroyed.")
+	fmt.Fprintln(os.Stderr, "  silo enter NAME - enter an existing named, isolated environment")
+	fmt.Fprintln(os.Stderr, "  silo destroy NAME - destroy an existing named, isolated environment")
 	os.Exit(1)
 }
 
 func fatal(err error) {
-	fmt.Fprintf(os.Stderr, "emptyshell: %v\n", err)
+	fmt.Fprintf(os.Stderr, "silo: %v\n", err)
 	os.Exit(1)
 }

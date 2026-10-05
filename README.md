@@ -1,8 +1,8 @@
-# EmptyShell
+# Silo
 
 > Instant, disposable Linux environments, like Python venv for your entire dev environment.
 
-**EmptyShell gives you instant, disposable Linux workspaces without the weight of containers or the friction of managing images. Start clean isolated environments in seconds that are automatically cleaned up on exit** or use **named workspaces** for longer, on-going sessions, that persist until explicitly destroyed. In either case you can be confident that changes stay completely stay isolated from your host system. It’s a **super simple way to try new tools, install packages, and test projects** in a safe, disposable environment.
+**Silo gives you instant, disposable Linux sandboxes without the weight of containers or the friction of managing images. Start clean isolated environments in seconds that are automatically cleaned up on exit** or use **named workspaces** for longer, on-going sessions, that persist until explicitly destroyed. In either case you can be confident that changes stay completely stay isolated from your host system. It’s a **super simple way to try new tools, install packages, and test projects** in a safe, disposable environment.
 
 
 
@@ -10,7 +10,7 @@
 
 ## Features
 
-The current standout features of EmptyShell are as follows:
+The current standout features of Silo are as follows:
 
 
 - Instant creation of transient environments that are automatically cleaned up when the shell exits
@@ -29,13 +29,13 @@ The current standout features of EmptyShell are as follows:
 - OverlayFS support
 - Go 1.25 or newer
 
-**Note:** EmptyShell requires root privilleges in order to support low-level filesystem operations, including mount namespaces, file system overlays,etc. The current implementation does not support unprivileged users, but this is a potential future enhancement.
+**Note:** Silo requires root privilleges in order to support low-level filesystem operations, including mount namespaces, file system overlays,etc. The current implementation does not support unprivileged users, but this is a potential future enhancement.
 
 ## Build
 
 ```bash
 go mod tidy
-go build -o emptyshell ./cmd/emptyshell
+go build -o silo ./cmd/silo
 ```
 
 ## Run
@@ -43,19 +43,19 @@ go build -o emptyshell ./cmd/emptyshell
 Start a transient session:
 
 ```bash
-sudo ./emptyshell
+sudo ./silo
 ```
 
 Create a named environment:
 
 ```bash
-sudo ./emptyshell create test
+sudo ./silo create test
 ```
 
 Enter a named environment:
 
 ```bash
-sudo ./emptyshell enter test
+sudo ./silo enter test
 ```
 
 Inside the shell, try:
@@ -74,11 +74,11 @@ Then exit:
 exit
 ```
 
-The transient session is removed when EmptyShell exits. Named environments stay
+The transient session is removed when Silo exits. Named environments stay
 on disk until you remove them explicitly:
 
 ```bash
-sudo ./emptyshell destroy test
+sudo ./silo destroy test
 ```
 
 ## Development
@@ -95,7 +95,7 @@ sudo apt-get install -y expect
 Then run the reclaim smoke test from the repository root:
 
 ```bash
-cd /path/to/shareful-utils-emptyshell
+cd /path/to/shareful-utils-silo
 sudo ./integration/reclaim_test.sh
 ```
 
@@ -107,17 +107,15 @@ checks whether the root disk usage decreases as expected. This will help ensure 
 ### General 
 The shell starts with a snapshot of the host filesystem, thus file system changes made to the host after the shell is started will not be visible inside the shell. This is an intentional limitation of the current implementation.
 
-### Snap 
-EmptyShell provides a virtual file system to applications ran inside the isolated environment, making it a good fit for many package installs that primarily write
-into the filesystem, including tools like `apt-get`, `npm`, `maven`, and other
-build-time dependency managers. However, some package managers, like `snap`, require deep integration with the host system and are not compatible with the current implementation of EmptyShell.
+### Low System Software
+Silo provides a virtual file system to applications ran inside the isolated environment, making it a good fit for stanard user applications. However, some low-level system software may not work properly inside the isolated environment, including `Docker`, `Snap` and other low-level system tools that require deep system integration.
 
 ### GUI Applications
-EmptyShell does supports running GUI applications inside the isolated environment, including browsers, IDEs, and other graphical tools. However, some GUI applications may require additional configuration or dependencies to run properly inside the isolated environment. Additionally it's good practice to start GUI applications with `&` e.g 
+Silo supports running GUI applications inside the isolated environment, including browsers, IDEs, and other graphical tools. However, some GUI applications may require additional configuration or dependencies to run properly inside the isolated environment. Additionally it's good practice to start GUI applications with `&` e.g 
 
 ```bash
 firefox &
 ```
 This will start the application in the background and allow you to continue using the isolated shell without blocking the terminal.
 
-**EmptyShell, the Python venv for your entire dev environment.**
+**Silo, the Python venv for your entire dev environment.**

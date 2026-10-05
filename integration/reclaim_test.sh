@@ -9,7 +9,7 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BIN="$ROOT_DIR/emptyshell"
+BIN="$ROOT_DIR/silo"
 LOGFILE="$(mktemp)"
 
 cleanup() {
@@ -27,9 +27,9 @@ fail_with_log() {
   exit 1
 }
 
-# 1) build emptyshell from the latest sources
+# 1) build silo from the latest sources
 cd "$ROOT_DIR"
-go build -o "$BIN" ./cmd/emptyshell
+go build -o "$BIN" ./cmd/silo
 
 # Gather root disk usage before the transient session is created.
 before=$(df -B1 --output=used / | tail -1 | tr -d ' ')
@@ -48,8 +48,8 @@ log_user 1
 log_file -a "$LOGFILE"
 spawn "$BIN"
 expect {
-  "Entering EmptyShell..." { puts "banner seen" }
-  timeout { puts stderr "timed out waiting for EmptyShell banner"; exit 1 }
+  "Entering Silo..." { puts "banner seen" }
+  timeout { puts stderr "timed out waiting for Silo banner"; exit 1 }
 }
 expect {
   -re {silo#[^>]+> } { puts "shell prompt ready" }
@@ -80,9 +80,9 @@ change=$((after - before))
 printf 'after=%s bytes\n' "$after"
 printf 'Disk usage change: %s bytes\n' "$change"
 
-if mount | grep -q "emptyshell"; then
-  echo "FAIL: stale emptyshell mounts still present" >&2
-  mount | grep emptyshell >&2 || true
+if mount | grep -q "silo"; then
+  echo "FAIL: stale silo mounts still present" >&2
+  mount | grep silo >&2 || true
   exit 2
 fi
 

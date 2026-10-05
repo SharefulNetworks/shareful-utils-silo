@@ -1,4 +1,4 @@
-module github.com/SharefulNetworks/shareful-utils-emptyshell
+module github.com/SharefulNetworks/shareful-utils-silo
 
 go 1.26.0
 

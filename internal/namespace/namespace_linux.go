@@ -11,7 +11,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/SharefulNetworks/shareful-utils-emptyshell/internal/session"
+	"github.com/SharefulNetworks/shareful-utils-silo/internal/session"
 	"golang.org/x/sys/unix"
 )
 

@@ -1,6 +1,6 @@
 //go:build linux
 
-// Package filesystem contains the Linux filesystem isolation used by EmptyShell.
+// Package filesystem contains the Linux filesystem isolation used by Silo.
 package filesystem
 
 import (
@@ -8,16 +8,16 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/SharefulNetworks/shareful-utils-emptyshell/internal/session"
+	"github.com/SharefulNetworks/shareful-utils-silo/internal/session"
 	"golang.org/x/sys/unix"
 )
 
 // SetupOverlay mounts an OverlayFS over the host root filesystem.
 // The host filesystem becomes the read-only lower layer. Any writes made
-// inside the EmptyShell are redirected to the session's temporary upper layer.
+// inside Silo are redirected to the session's temporary upper layer.
 func SetupOverlay(s *session.Session) error {
 
-	//inject the host's /etc/resolv.conf into the overlay so that DNS resolution works inside the EmptyShell.
+	// inject the host's /etc/resolv.conf into the overlay so that DNS resolution works inside Silo.
 	if err := injectDNS(s.Upper); err != nil {
 		return err
 	}
@@ -51,7 +51,7 @@ func SetupOverlay(s *session.Session) error {
 	return nil
 }
 
-// injectDNS copies the host's /etc/resolv.conf into the overlay's upper layer so that DNS resolution works inside the EmptyShell.
+// injectDNS copies the host's /etc/resolv.conf into the overlay's upper layer so that DNS resolution works inside Silo.
 func injectDNS(upperDir string) error {
 	sourcePath := "/etc/resolv.conf"
 	destinationPath := filepath.Join(upperDir, "etc", "resolv.conf")

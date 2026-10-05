@@ -24,7 +24,7 @@ type MountHandler struct {
 	mounts []MountSpec
 }
 
-// NewDefaultMountHandler returns the default mount set used by a developer-friendly EmptyShell.
+// NewDefaultMountHandler returns the default mount set used by a developer-friendly Silo.
 func NewDefaultMountHandler() *MountHandler {
 	return &MountHandler{
 		mounts: []MountSpec{
@@ -42,7 +42,7 @@ func NewDefaultMountHandler() *MountHandler {
 func (m *MountHandler) Apply(root string) error {
 	for _, spec := range m.mounts {
 
-		//NB: we now skip mounting /proc here because in order for process isolation to work correctly, 
+		//NB: we now skip mounting /proc here because in order for process isolation to work correctly,
 		//    /proc must be mounted inside the chroot after entering the new PID namespace. This is done in the RunShell function in namespace_linux.go.
 		if spec.Target == "/proc" {
 			continue

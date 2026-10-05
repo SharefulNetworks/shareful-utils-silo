@@ -1,4 +1,4 @@
-// Package session manages the filesystem used by an EmptyShell session.
+// Package session manages the filesystem used by a Silo session.
 package session
 
 import (
@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 )
 
-const namedEnvironmentRoot = "/var/lib/emptyshell/es_envs"
+const namedEnvironmentRoot = "/var/lib/silo/envs"
 
 type Session struct {
 	// Root is the directory containing the session's writable state.
@@ -29,12 +29,12 @@ type Session struct {
 	Name string
 }
 
-// NewTransient creates the directory layout for a new disposable EmptyShell session.
+// NewTransient creates the directory layout for a new disposable Silo session.
 //
 // This prototype deliberately uses /tmp. Later versions can move persistent
 // named sessions into a dedicated directory under the user's home directory.
 func NewTransient() (*Session, error) {
-	root, err := os.MkdirTemp("", "emptyshell-")
+	root, err := os.MkdirTemp("", "temp-")
 	if err != nil {
 		return nil, fmt.Errorf("create session directory: %w", err)
 	}
@@ -138,7 +138,7 @@ func validateName(name string) error {
 
 // Cleanup removes the temporary session directory.
 func (s *Session) Cleanup() {
-	fmt.Printf("Cleaning up transient EmptyShell session %q\n", s.Root)
+	fmt.Printf("Cleaning up transient Silo session %q\n", s.Root)
 	if s == nil || !s.Transient || s.Root == "" {
 		return
 	}
