@@ -18,13 +18,32 @@ import (
 func SetupOverlay(s *session.Session) error {
 
 	// inject the host's /etc/resolv.conf into the overlay so that DNS resolution works inside Silo.
-	if err := injectDNS(s.Upper); err != nil {
-		return err
-	}
+	//NB: COMMENTED OUT - DNS will now be provided by minimal file system
+	//if err := injectDNS(s.Upper); err != nil {
+	//	return err
+	//}
+//
+	//// OverlayFS expects the lower filesystem to be the directory that normally
+	//// represents the root filesystem.
+	//   COMMENTED OUT - The lower layer is NO LONGER the host's root file system, but rather a minimal filesystem that contains only the files necessary to run a shell.
+	//lower := "/"
 
-	// OverlayFS expects the lower filesystem to be the directory that normally
-	// represents the root filesystem.
-	lower := "/"
+	// The overlay's lower layer is now a minimal filesystem that contains only the
+	// files necessary to run a shell. This is done to avoid polluting the overlay
+	// with the host's root file system
+	exe, err := os.Executable()
+    if err != nil {
+        return fmt.Errorf("get executable path: %w", err)
+    }
+    
+    resDir := filepath.Join(filepath.Dir(exe), "res")
+    
+    lower := filepath.Join(
+        resDir,
+        "silo-images",
+        "arm64",
+        "ubuntu-24.04-LTS",
+    )
 
 	options := fmt.Sprintf(
 		"lowerdir=%s,upperdir=%s,workdir=%s",

@@ -8,6 +8,7 @@ import (
 )
 
 const namedEnvironmentRoot = "/var/lib/silo/envs"
+const transientEnvironmentRoot = "/var/lib/silo/tenvs"
 
 type Session struct {
 	// Root is the directory containing the session's writable state.
@@ -34,9 +35,13 @@ type Session struct {
 // This prototype deliberately uses /tmp. Later versions can move persistent
 // named sessions into a dedicated directory under the user's home directory.
 func NewTransient() (*Session, error) {
-	root, err := os.MkdirTemp("", "temp-")
+
+	if err := os.MkdirAll(transientEnvironmentRoot, 0755); err != nil {
+		return nil, fmt.Errorf("create transient environment root: %w", err)
+	}
+	root, err := os.MkdirTemp(transientEnvironmentRoot, "temp-")
 	if err != nil {
-		return nil, fmt.Errorf("create session directory: %w", err)
+		return nil, fmt.Errorf("create transient session directory: %w", err)
 	}
 
 	return newSession(root, true, "", true)

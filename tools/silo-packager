@@ -1,0 +1,103 @@
+#!/bin/bash
+
+#------------------------------------------------------------------------------------
+# Name:          silo-packager
+# Description:   This script packages the Silo application for distribution.
+#                It builds the Silo binary, packages the necessary dependencies, 
+#                and creates a zip file for distribution.
+# Author :       Giles Thompson
+# Date:          08-10-2026
+#
+# Usage:  From the project ROOT run:        
+#         sudo ./tools/silo-packager -o <output_directory> -i <images_path>
+#------------------------------------------------------------------------------------
+
+
+
+
+echo "Packaging Silo for distribution..."
+
+#Global variables
+VERSION="1.0.0"
+IMAGES_PATH=""
+OUTPUT_DIR=""
+
+
+
+# parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -o|--output)
+            OUTPUT_DIR="$2"
+            shift 2
+            ;;
+        -i|--images)
+            IMAGES_PATH="$2"
+            shift 2
+            ;;
+        *)
+            echo "Unknown option $1"
+            exit 1
+            ;;
+    esac
+done
+
+# verify that an output directory was provided
+if [[ -z "$OUTPUT_DIR" ]]; then
+    echo "Error: Output directory not specified. Use -o or --output to specify the output directory."
+    exit 1
+fi
+
+# verify that an images path was provided
+if [[ -z "$IMAGES_PATH" ]]; then
+    echo "Error: Images path not specified. Use -i or --images to specify the images path."
+    exit 1
+fi
+
+# ensure the output target exists before moving files into it
+mkdir -p "$OUTPUT_DIR" || { echo "Error: Failed to create output directory"; exit 1; }
+
+# switch to cmd directory and build the Silo binary
+echo "Building Silo binary..."
+priorDir=$(pwd)
+cd cmd/silo || { echo "Error: Failed to change directory to cmd"; exit 1; }
+go build -o silo || { echo "Error: Failed to build Silo binary"; exit 1; }
+cd "$priorDir"
+
+# create a temporary staging directory so we never zip a directory that already exists
+# in the repository root or in the output directory.
+releaseRoot=$(mktemp -d "${TMPDIR:-/tmp}/silo-packager.XXXXXX") || { echo "Error: Failed to create temporary staging directory"; exit 1; }
+releaseDir="$releaseRoot/Silo-$VERSION"
+mkdir -p "$releaseDir" || { echo "Error: Failed to create release directory"; exit 1; }
+
+# move built binary into the release directory
+echo "Creating release directory..."
+mv cmd/silo/silo "$releaseDir/" || { echo "Error: Failed to move Silo binary to release directory"; exit 1; }
+
+# next create resources directory and copy the images into it
+echo "Copying images to release directory..."
+mkdir -p "$releaseDir/res" || { echo "Error: Failed to create resources directory"; exit 1; }
+cp -a "$IMAGES_PATH" "$releaseDir/res/" || { echo "Error: Failed to copy images to release directory"; exit 1; }
+
+# zip up the release directory from its parent so all paths are relative and the archive
+# file itself is never accidentally considered part of the input tree.
+echo "Zipping release directory..."
+(
+    cd "$releaseRoot" &&
+    zip -ry "Silo-$VERSION.zip" "./Silo-$VERSION"
+) || {
+    echo "Error: Failed to zip release directory"
+    exit 1
+}
+
+# move the zip file to the output directory
+echo "Moving zip file to output directory..."
+mv "$releaseRoot/Silo-$VERSION.zip" "$OUTPUT_DIR/" || { echo "Error: Failed to move zip file to output directory"; exit 1; }
+
+# clean up the temporary staging directory
+echo "Cleaning up..."
+rm -rf "$releaseRoot"
+
+echo "Packaging complete. The Silo release package is located at $OUTPUT_DIR/Silo-$VERSION.zip"
+
+

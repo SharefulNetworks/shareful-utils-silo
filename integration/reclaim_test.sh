@@ -3,6 +3,7 @@ set -euo pipefail
 
 export GOPROXY=https://proxy.golang.org,direct
 
+# ensure that the script is being run as root
 if [ "$(id -u)" -ne 0 ]; then
   echo "reclaim_test.sh must run as root" >&2
   exit 1
@@ -31,22 +32,24 @@ fail_with_log() {
 cd "$ROOT_DIR"
 go build -o "$BIN" ./cmd/silo
 
-# Gather root disk usage before the transient session is created.
+# 2) Gather root disk usage before the transient session is created.
 before=$(df -B1 --output=used / | tail -1 | tr -d ' ')
 echo "before=${before} bytes"
 
+# 3) validate that expect is installed so we can automate the interactive Silo shell.
 if ! command -v expect >/dev/null 2>&1; then
   echo "expect is required to automate the interactive shell" >&2
   echo "Install it with: apt-get install -y expect" >&2
   exit 1
 fi
 
+# 4) spawn the silo binary and exercise the transient shell to ensure that it cleans up after itself and does not leave any stale mounts or disk usage behind.
 set +e
 expect <<EOF 2>&1 | tee "$LOGFILE"
 set timeout 300
 log_user 1
 log_file -a "$LOGFILE"
-spawn "$BIN"
+spawn "$BIN"   
 expect {
   "Entering Silo..." { puts "banner seen" }
   timeout { puts stderr "timed out waiting for Silo banner"; exit 1 }

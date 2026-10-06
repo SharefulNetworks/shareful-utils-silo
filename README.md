@@ -13,9 +13,10 @@
 The current standout features of Silo are as follows:
 
 
-- Instant creation of transient environments that are **automatically cleaned up** when the shell exits
-- Instant creation of named environments that can be created, entered and re-entered at any time. **These will persist on disk until explicitly destroyed** and are perfect for long-running development sessions.
-- Compatible with common package managers and build tools, including `apt-get`, `npm`, `maven`, `pip`, `go-mod`, `cargo`, and others. **Changes made to the filesystem during development session are isolated from the host system** and are removed when the session ends or is explicitly destroyed.
+- Instant creation of transient environments that are **automatically cleaned up** when you exit the Silo shell. Perfect for quick experiments, testing new tools, or trying out new packages without leaving a trace on your host system.
+- Instant creation of named Silo environments that can be created, entered and re-entered at any time. **These will persist on disk until explicitly destroyed** and are perfect for long-running development sessions.
+- Complete file system isolation. **Changes made to the filesystem from within a Silo are completely isolated from the host system** and are removed when the session ends or is explicitly destroyed.
+- Compatible with common package managers and build tools, including `apt-get`, `npm`, `maven`, `pip`, `go-mod`, `cargo`, and others. 
 - Support for running GUI application inside the isolated environment, including browsers, IDEs, and other graphical tools. 
 - **No config files, images or containers to manage.** An interactive environment is created on-the-fly, that's **immediately available and isolated from the host** filesystem.
 - **Super fast startup time**, with **no image download or container runtime** overhead

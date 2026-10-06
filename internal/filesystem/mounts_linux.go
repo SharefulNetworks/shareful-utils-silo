@@ -42,8 +42,10 @@ func NewDefaultMountHandler() *MountHandler {
 func (m *MountHandler) Apply(root string) error {
 	for _, spec := range m.mounts {
 
-		//NB: we now skip mounting /proc here because in order for process isolation to work correctly,
-		//    /proc must be mounted inside the chroot after entering the new PID namespace. This is done in the RunShell function in namespace_linux.go.
+		// NB: we now skip mounting /proc here because in order for process isolation
+		//     to work correctly, /proc must be mounted inside the chroot after
+		//     entering the new PID namespace. This is done in RunShell in
+		//     namespace_linux.go.
 		if spec.Target == "/proc" {
 			continue
 		}
@@ -103,16 +105,45 @@ func unmountIfMounted(target string) {
 	}
 }
 
+// bindIfExists bind mounts src onto dst.
+//
+// The target is created to match the type of the source:
+//   - directories: the target directory is created with MkdirAll
+//   - files: the target file is created before the bind mount
+//
+// This is important when using a minimal Silo root filesystem because files
+// such as /etc/hosts may not exist in the packaged image.
 func bindIfExists(src, dst string) error {
-	if _, err := os.Stat(src); err != nil {
+	info, err := os.Stat(src)
+	if err != nil {
 		if os.IsNotExist(err) {
 			return nil
 		}
 		return fmt.Errorf("stat %s: %w", src, err)
 	}
 
-	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
-		return fmt.Errorf("create bind target %s: %w", dst, err)
+	if info.IsDir() {
+		if err := os.MkdirAll(dst, 0755); err != nil {
+			return fmt.Errorf("create bind target %s: %w", dst, err)
+		}
+	} else {
+		if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+			return fmt.Errorf(
+				"create bind target directory %s: %w",
+				filepath.Dir(dst),
+				err,
+			)
+		}
+
+		// A file bind mount requires the destination file to exist.
+		f, err := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY, info.Mode().Perm())
+		if err != nil {
+			return fmt.Errorf("create bind target %s: %w", dst, err)
+		}
+
+		if err := f.Close(); err != nil {
+			return fmt.Errorf("close bind target %s: %w", dst, err)
+		}
 	}
 
 	if err := unix.Mount(src, dst, "", unix.MS_BIND, ""); err != nil {
