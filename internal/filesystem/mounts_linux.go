@@ -42,22 +42,28 @@ func NewDefaultMountHandler() *MountHandler {
 func (m *MountHandler) Apply(root string) error {
 	for _, spec := range m.mounts {
 
-		// NB: we now skip mounting /proc here because in order for process isolation
-		//     to work correctly, /proc must be mounted inside the chroot after
-		//     entering the new PID namespace. This is done in RunShell in
-		//     namespace_linux.go.
+		// /proc must be mounted after entering the new PID namespace so that
+		// it reflects the sandbox's process namespace. It is therefore mounted
+		// separately by RunShell in namespace_linux.go.
 		if spec.Target == "/proc" {
 			continue
 		}
 
 		target := filepath.Join(root, spec.Target)
-		if err := os.MkdirAll(target, 0755); err != nil {
-			return fmt.Errorf("create mount target %s: %w", target, err)
+
+		if err := ensureMountTarget(target); err != nil {
+			return err
 		}
 
 		if err := unix.Mount(spec.Source, target, spec.Type, spec.Flags, spec.Data); err != nil {
 			return fmt.Errorf("mount %s -> %s: %w", spec.Source, target, err)
 		}
+	}
+
+	// These are explicit host integrations rather than generic runtime mounts.
+	xauthority := os.Getenv("XAUTHORITY")
+	if xauthority == "" {
+		xauthority = filepath.Join(os.Getenv("HOME"), ".Xauthority")
 	}
 
 	for _, pair := range []struct {
@@ -67,6 +73,8 @@ func (m *MountHandler) Apply(root string) error {
 		{src: "/etc/resolv.conf", dst: filepath.Join(root, "etc", "resolv.conf")},
 		{src: "/etc/hosts", dst: filepath.Join(root, "etc", "hosts")},
 		{src: "/etc/ssl/certs", dst: filepath.Join(root, "etc", "ssl", "certs")},
+		//{src: "/tmp/.X11-unix", dst: filepath.Join(root, "tmp", ".X11-unix")},   //not required for now remove in later versions.
+		//{src: xauthority, dst: filepath.Join(root, "run", "silo", "xauthority")}, //not required for now remove in later versions.
 	} {
 		if err := bindIfExists(pair.src, pair.dst); err != nil {
 			return err
@@ -92,6 +100,19 @@ func (m *MountHandler) Cleanup(root string) {
 	}
 }
 
+// ensureMountTarget ensures that a runtime filesystem mount point exists.
+//
+// Runtime mounts currently use directory mount points, so this deliberately
+// only creates the target directory. Bind mounts have separate handling
+// because their targets may be either files or directories.
+func ensureMountTarget(target string) error {
+	if err := os.MkdirAll(target, 0755); err != nil {
+		return fmt.Errorf("create mount target %s: %w", target, err)
+	}
+
+	return nil
+}
+
 func unmountIfMounted(target string) {
 	if _, err := os.Stat(target); err != nil {
 		if os.IsNotExist(err) {
@@ -107,7 +128,9 @@ func unmountIfMounted(target string) {
 
 // bindIfExists bind mounts src onto dst.
 //
-// The target is created to match the type of the source:
+// The source is checked first. If it does not exist, the bind is skipped.
+//
+// The target is then created to match the type of the source:
 //   - directories: the target directory is created with MkdirAll
 //   - files: the target file is created before the bind mount
 //

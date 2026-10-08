@@ -1,5 +1,15 @@
 #!/bin/bash
 
+#------------------------------------------------------------------------------------
+# Name:          silo-imagegen
+# Description:   This script is responsible for generating Silo-specific, linux ditro images
+#                for various architectures.                 
+# Date:          08-10-2026
+#
+# Usage:  From the project ROOT run:        
+#         sudo ./tools/silo-packager -o <output_directory> -i <images_path>
+#------------------------------------------------------------------------------------
+
 
 echo "Generating Silo image..."
 
